@@ -12,6 +12,15 @@ type DiffFile = {
     valueMoved: Record<string, string[]>
 };
 
+type LangEntry = {
+    name: string,
+    region: string,
+    bidirectional: boolean
+};
+type MCMeta = {
+    language: Record<string, LangEntry>
+};
+
 const decoder = new TextDecoder("utf-8");
 const encoder = new TextEncoder();
 
@@ -26,6 +35,7 @@ if (!await fs.exists("./data")) {
 
 let diffMap: AMap = {}
 let versionToAssets: AMap = {}
+let theMeta: MCMeta;
 
 setInterval(async () => {
     await updateDatabase()
@@ -40,6 +50,9 @@ router
     })
     .get("/lang/:version/:code", async (context) => {
         await answerRequest(context);
+    })
+    .get("/mcmeta", (context) => {
+        context.response.body = theMeta;
     });
 
 const app = new Application();
@@ -59,15 +72,17 @@ async function updateDatabase() {
 
             diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
             versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
+            theMeta = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/pack.mcmeta")))
         }
     } catch(e) {
         console.error(e)
 
-        if (!diffMap || !versionToAssets) {
+        if (!diffMap || !versionToAssets || !theMeta) {
             await fs.emptyDir("./data")
 
             diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
             versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
+            theMeta = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/pack.mcmeta")))
         }
     }
 }
