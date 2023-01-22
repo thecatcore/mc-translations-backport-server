@@ -50,9 +50,9 @@ await app.listen({ port: 8000 });
 
 async function updateDatabase() {
     try {
-        const currentCommit = await run(["git", "rev-parse", "--short", "HEAD"])
-        await run(["git", "pull"])
-        const newCommit = await run(["git", "rev-parse", "--short", "HEAD"])
+        const currentCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: "./mc-translations-backport-data"})
+        await run(["git", "pull"], {cwd: "./mc-translations-backport-data"})
+        const newCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: "./mc-translations-backport-data"})
 
         if (currentCommit != newCommit) {
             await fs.emptyDir("./data")
@@ -63,10 +63,12 @@ async function updateDatabase() {
     } catch(e) {
         console.error(e)
 
-        await fs.emptyDir("./data")
+        if (!diffMap || !versionToAssets) {
+            await fs.emptyDir("./data")
 
-        diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
-        versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
+            diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
+            versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
+        }
     }
 }
 
