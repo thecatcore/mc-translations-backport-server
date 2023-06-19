@@ -1,8 +1,9 @@
-import * as fs from "https://deno.land/std@0.155.0/fs/mod.ts";
-import { run } from "https://deno.land/x/run_simple@1.1.0/mod.ts";
-import { Application, Router } from "https://deno.land/x/oak@v11.1.0/mod.ts";
-import { RouterContext } from "https://deno.land/x/oak@v11.1.0/router.ts";
-import { assert } from "https://deno.land/std@0.152.0/testing/asserts.ts";
+import { exists } from "https://deno.land/std@0.192.0/fs/exists.ts";
+import { emptyDir } from "https://deno.land/std@0.192.0/fs/empty_dir.ts";
+import { run } from "https://deno.land/x/run_simple@2.1.0/mod.ts";
+import { Application, Router } from "https://deno.land/x/oak@v12.5.0/mod.ts";
+import { RouterContext } from "https://deno.land/x/oak@v12.5.0/router.ts";
+import { assert } from "https://deno.land/std@0.192.0/testing/asserts.ts";
 
 type AMap = Record<string, string>;
 type DiffFile = {
@@ -24,11 +25,11 @@ type MCMeta = {
 const decoder = new TextDecoder("utf-8");
 const encoder = new TextEncoder();
 
-if (!await fs.exists("./mc-translations-backport-data")) {
+if (!await exists("./mc-translations-backport-data")) {
     await run(["git", "clone", "https://github.com/arthurbambou/mc-translations-backport-data.git"])
 }
 
-if (!await fs.exists("./data")) {
+if (!await exists("./data")) {
     await Deno.mkdir("./data")
 }
 
@@ -69,7 +70,7 @@ async function updateDatabase() {
         const newCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: "./mc-translations-backport-data"})
 
         if (currentCommit != newCommit || firstStart) {
-            await fs.emptyDir("./data")
+            await emptyDir("./data")
 
             diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
             versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
@@ -80,7 +81,7 @@ async function updateDatabase() {
         console.error(e)
 
         if (!diffMap || !versionToAssets || !theMeta) {
-            await fs.emptyDir("./data")
+            await emptyDir("./data")
 
             diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
             versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
@@ -94,11 +95,11 @@ async function answerRequest(context: RouterContext<"/lang/:version/:code",{ ver
     const version = params?.version
     const code = params?.code
 
-    if (!await fs.exists(`./data/${version}`)) {
+    if (!await exists(`./data/${version}`)) {
         await Deno.mkdir(`./data/${version}`)
     }
 
-    if (!await fs.exists(`./data/${version}/${code}.json`)) {
+    if (!await exists(`./data/${version}/${code}.json`)) {
         const todoMap: Array<{
             parent: string,
             child: string
@@ -130,18 +131,18 @@ async function answerRequest(context: RouterContext<"/lang/:version/:code",{ ver
             const childPath = `./data/${entry.child}/${code}.json`
             const parentPath = `./data/${entry.parent}/${code}.json`
 
-            if (!await fs.exists(`./data/${entry.child}`)) {
+            if (!await exists(`./data/${entry.child}`)) {
                 await Deno.mkdir(`./data/${entry.child}`)
             }
 
-            if (await fs.exists(childPath)) {
+            if (await exists(childPath)) {
                 continue
             }
 
             if (!entry.parent) {
                 const langPath = "./mc-translations-backport-data/translated_original/" + versionToAssets[entry.child] + "/" + code + ".json";
 
-                if (await fs.exists(langPath)) {
+                if (await exists(langPath)) {
                     await Deno.writeFile(childPath, await Deno.readFile(langPath));
                 }
             } else {
@@ -152,7 +153,7 @@ async function answerRequest(context: RouterContext<"/lang/:version/:code",{ ver
 
                 let langPathJSON: Record<string, string>;
 
-                if (await fs.exists(langPath)) {
+                if (await exists(langPath)) {
                     langPathJSON = <Record<string, string>><unknown>JSON.parse(decoder.decode(await Deno.readFile(langPath)));
                 } else {
                     langPathJSON = <Record<string, string>><unknown>JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/original/" + entry.child + ".json")));
