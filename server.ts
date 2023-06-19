@@ -26,7 +26,7 @@ const decoder = new TextDecoder("utf-8");
 const encoder = new TextEncoder();
 
 if (!await exists("./mc-translations-backport-data")) {
-    await run(["git", "clone", "https://github.com/arthurbambou/mc-translations-backport-data.git"])
+    await run(["git", "clone", "https://github.com/thecatcore/mc-translations-backport-data.git"])
 }
 
 if (!await exists("./data")) {
