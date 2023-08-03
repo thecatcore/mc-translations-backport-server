@@ -10,4 +10,4 @@ USER deno
 COPY . /app
 WORKDIR /app
 
-CMD [ "run", "--allow-read=~/mc-translations-backport-data,~/data", "--allow-run=git", "--allow-net", "--allow-write=~/data", "server.ts" ]
+CMD [ "run", "--allow-read=./mc-translations-backport-data,./data", "--allow-run=git", "--allow-net", "--allow-write=./data", "server.ts" ]

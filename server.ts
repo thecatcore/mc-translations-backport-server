@@ -25,8 +25,8 @@ type MCMeta = {
 const decoder = new TextDecoder("utf-8");
 const encoder = new TextEncoder();
 
-const dirName = "~/mc-translations-backport-data"
-const dataDirName = "~/data"
+const dirName = "./mc-translations-backport-data"
+const dataDirName = "./data"
 
 try {
     if (!await exists(dirName)) {
