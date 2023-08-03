@@ -1,5 +1,8 @@
 FROM denoland/deno
 
+RUN apt-get -y update
+RUN apt-get -y install git
+
 EXPOSE 8005
 
 USER deno
