@@ -25,12 +25,15 @@ type MCMeta = {
 const decoder = new TextDecoder("utf-8");
 const encoder = new TextEncoder();
 
-if (!await exists("./mc-translations-backport-data")) {
-    await run(["git", "clone", "https://github.com/thecatcore/mc-translations-backport-data.git"])
+const dirName = "~/mc-translations-backport-data"
+const dataDirName = "~/data"
+
+if (!await exists(dirName)) {
+    await run(["git", "clone", "https://github.com/thecatcore/mc-translations-backport-data.git", dirName])
 }
 
-if (!await exists("./data")) {
-    await Deno.mkdir("./data")
+if (!await exists(dataDirName)) {
+    await Deno.mkdir(dataDirName)
 }
 
 
@@ -73,27 +76,27 @@ await app.listen({ port: 8005 });
 
 async function updateDatabase() {
     try {
-        const currentCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: "./mc-translations-backport-data"})
-        await run(["git", "pull"], {cwd: "./mc-translations-backport-data"})
-        const newCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: "./mc-translations-backport-data"})
+        const currentCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: dirName})
+        await run(["git", "pull"], {cwd: dirName})
+        const newCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: dirName})
 
         if (currentCommit != newCommit || firstStart) {
-            await emptyDir("./data")
+            await emptyDir(dataDirName)
 
-            diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
-            versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
-            theMeta = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/pack.mcmeta")))
+            diffMap = JSON.parse(decoder.decode(await Deno.readFile(dirName + "/diff_info.json")))
+            versionToAssets = JSON.parse(decoder.decode(await Deno.readFile(dirName + "/translations_info.json")))
+            theMeta = JSON.parse(decoder.decode(await Deno.readFile(dirName + "/pack.mcmeta")))
             firstStart = false;
         }
     } catch(e) {
         console.error(e)
 
         if (!diffMap || !versionToAssets || !theMeta) {
-            await emptyDir("./data")
+            await emptyDir(dataDirName)
 
-            diffMap = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff_info.json")))
-            versionToAssets = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/translations_info.json")))
-            theMeta = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/pack.mcmeta")))
+            diffMap = JSON.parse(decoder.decode(await Deno.readFile(dirName + "/diff_info.json")))
+            versionToAssets = JSON.parse(decoder.decode(await Deno.readFile(dirName + "/translations_info.json")))
+            theMeta = JSON.parse(decoder.decode(await Deno.readFile(dirName + "/pack.mcmeta")))
         }
     }
 }
@@ -103,11 +106,11 @@ async function answerRequest(context: RouterContext<"/lang/:version/:code",{ ver
     const version = params?.version
     const code = params?.code
 
-    if (!await exists(`./data/${version}`)) {
-        await Deno.mkdir(`./data/${version}`)
+    if (!await exists(`${dataDirName}/${version}`)) {
+        await Deno.mkdir(`${dataDirName}/${version}`)
     }
 
-    if (!await exists(`./data/${version}/${code}.json`)) {
+    if (!await exists(`${dataDirName}/${version}/${code}.json`)) {
         const todoMap: Array<{
             parent: string,
             child: string
@@ -136,11 +139,11 @@ async function answerRequest(context: RouterContext<"/lang/:version/:code",{ ver
         while (todoMap.length > 0) {
             const entry = todoMap.shift()
             assert(entry != undefined, "ohno");
-            const childPath = `./data/${entry.child}/${code}.json`
-            const parentPath = `./data/${entry.parent}/${code}.json`
+            const childPath = `${dataDirName}/${entry.child}/${code}.json`
+            const parentPath = `${dataDirName}/${entry.parent}/${code}.json`
 
-            if (!await exists(`./data/${entry.child}`)) {
-                await Deno.mkdir(`./data/${entry.child}`)
+            if (!await exists(`${dataDirName}/${entry.child}`)) {
+                await Deno.mkdir(`${dataDirName}/${entry.child}`)
             }
 
             if (await exists(childPath)) {
@@ -148,23 +151,23 @@ async function answerRequest(context: RouterContext<"/lang/:version/:code",{ ver
             }
 
             if (!entry.parent) {
-                const langPath = "./mc-translations-backport-data/translated_original/" + versionToAssets[entry.child] + "/" + code + ".json";
+                const langPath = dirName + "/translated_original/" + versionToAssets[entry.child] + "/" + code + ".json";
 
                 if (await exists(langPath)) {
                     await Deno.writeFile(childPath, await Deno.readFile(langPath));
                 }
             } else {
-                const diffManifest: DiffFile = JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/diff/" + entry.parent + "#" + entry.child + ".json")));
+                const diffManifest: DiffFile = JSON.parse(decoder.decode(await Deno.readFile(dirName + "/diff/" + entry.parent + "#" + entry.child + ".json")));
 
                 const newerLangJSON: AMap = JSON.parse(decoder.decode(await Deno.readFile(parentPath)))
-                const langPath = "./mc-translations-backport-data/translated_original/" + versionToAssets[entry.child] + "/" + code + ".json";
+                const langPath = dirName + "/translated_original/" + versionToAssets[entry.child] + "/" + code + ".json";
 
                 let langPathJSON: Record<string, string>;
 
                 if (await exists(langPath)) {
                     langPathJSON = <Record<string, string>><unknown>JSON.parse(decoder.decode(await Deno.readFile(langPath)));
                 } else {
-                    langPathJSON = <Record<string, string>><unknown>JSON.parse(decoder.decode(await Deno.readFile("./mc-translations-backport-data/original/" + entry.child + ".json")));
+                    langPathJSON = <Record<string, string>><unknown>JSON.parse(decoder.decode(await Deno.readFile(dirName + "/original/" + entry.child + ".json")));
                 }
 
                 const theJson: Record<string, string> = {};
@@ -207,6 +210,6 @@ async function answerRequest(context: RouterContext<"/lang/:version/:code",{ ver
         }
     }
 
-    const theFile = await Deno.readFile(`./data/${version}/${code}.json`)
+    const theFile = await Deno.readFile(`${dataDirName}/${version}/${code}.json`)
     context.response.body = JSON.parse(decoder.decode(theFile))
 }
