@@ -2,7 +2,7 @@ version: '3.3'
 
 services:
   lang_server:
-    build: https://github.com/thecatcore/mc-translations-backport-server.git
+    build: https://github.com/thecatcore/mc-translations-backport-server.git#main
     restart: always
     ports:
       - 8005:8005
