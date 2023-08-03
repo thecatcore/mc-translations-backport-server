@@ -61,9 +61,18 @@ const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-await app.listen({ port: 8000 });
+await app.listen({ port: 8005 });
 
 async function updateDatabase() {
+    try {
+        await run(["git", "fetch"])
+        await run(["git", "reset", "--hard", "HEAD"])
+        await run(["git", "merge", "'@{u}'"])
+    } catch (e) {
+        console.log("failed to update server repo")
+        console.error(e)
+    }
+
     try {
         const currentCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: "./mc-translations-backport-data"})
         await run(["git", "pull"], {cwd: "./mc-translations-backport-data"})
