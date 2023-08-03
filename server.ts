@@ -28,12 +28,17 @@ const encoder = new TextEncoder();
 const dirName = "~/mc-translations-backport-data"
 const dataDirName = "~/data"
 
-if (!await exists(dirName)) {
-    await run(["git", "clone", "https://github.com/thecatcore/mc-translations-backport-data.git", dirName])
-}
+try {
+    if (!await exists(dirName)) {
+        await run(["git", "clone", "https://github.com/thecatcore/mc-translations-backport-data.git", dirName])
+    }
 
-if (!await exists(dataDirName)) {
-    await Deno.mkdir(dataDirName)
+    if (!await exists(dataDirName)) {
+        await Deno.mkdir(dataDirName)
+    }
+} catch (e) {
+    console.error(e)
+    console.log("Error during initial clone.")
 }
 
 
