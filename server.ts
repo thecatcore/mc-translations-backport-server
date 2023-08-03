@@ -1,9 +1,9 @@
-import { exists } from "https://deno.land/std@0.192.0/fs/exists.ts";
-import { emptyDir } from "https://deno.land/std@0.192.0/fs/empty_dir.ts";
+import { exists } from "https://deno.land/std@0.197.0/fs/exists.ts";
+import { emptyDir } from "https://deno.land/std@0.197.0/fs/empty_dir.ts";
 import { run } from "https://deno.land/x/run_simple@2.1.0/mod.ts";
-import { Application, Router } from "https://deno.land/x/oak@v12.5.0/mod.ts";
-import { RouterContext } from "https://deno.land/x/oak@v12.5.0/router.ts";
-import { assert } from "https://deno.land/std@0.192.0/testing/asserts.ts";
+import { Application, Router } from "https://deno.land/x/oak@v12.6.0/mod.ts";
+import { RouterContext } from "https://deno.land/x/oak@v12.6.0/router.ts";
+import { assert } from "https://deno.land/std@0.197.0/testing/asserts.ts";
 
 type AMap = Record<string, string>;
 type DiffFile = {
@@ -61,18 +61,17 @@ const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
 
+app.addEventListener("listen", ({ hostname, port, secure }) => {
+    console.log(
+      `Listening on: ${secure ? "https://" : "http://"}${
+        hostname ?? "localhost"
+      }:${port}`,
+    );
+  });
+
 await app.listen({ port: 8005 });
 
 async function updateDatabase() {
-    try {
-        await run(["git", "fetch"])
-        await run(["git", "reset", "--hard", "HEAD"])
-        await run(["git", "merge", "'@{u}'"])
-    } catch (e) {
-        console.log("failed to update server repo")
-        console.error(e)
-    }
-
     try {
         const currentCommit = await run(["git", "rev-parse", "--short", "HEAD"], {cwd: "./mc-translations-backport-data"})
         await run(["git", "pull"], {cwd: "./mc-translations-backport-data"})
