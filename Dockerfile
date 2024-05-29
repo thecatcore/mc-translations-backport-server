@@ -1,4 +1,4 @@
-FROM denoland/deno
+FROM denoland/deno:1.36.4
 
 RUN apt-get -y update
 RUN apt-get -y install git
